@@ -26,6 +26,8 @@ public plugin_init()
     register_clcmd("+hook", "Clcmd_HookOn");
     register_clcmd("-hook", "Clcmd_HookOff");
 
+    register_forward(FM_PlayerPostThink, "MultiHook_PostThink", true);
+
     CreateCvars();
 
     g_iBitHookAccess = read_flags(g_Cvars[CVAR_HOOK_ACCESS]);
@@ -39,13 +41,35 @@ public Clcmd_HookOn(id)
         return PLUGIN_HANDLED;
     }
     g_DataStatus[id][HOOK_USE] = true;
-    
+
     return PLUGIN_HANDLED;
 }
 
 public Clcmd_HookOff(id)
 {
 
+}
+
+public MultiHook_PostThink(id)
+{
+    if(g_DataStatus[id][HOOK_USE])
+    {
+        static Float: fStartPos[3], Float:fEndPos[3];
+        
+        get_entvar(id, var_origin, fStartPos);
+
+        velocity_by_aim(id, 9999, fEndPos);
+
+        get_traceline(fStartPos, fEndPos, id, fEndPos);
+
+        IsHooking(id);
+    }    
+}
+
+stock get_traceline(Float: fStartPos[3], Float: fEndPos[3], const IGNOREED, Float: vHitPos[3])
+{
+    engfunc(EngFunc_TraceLine, fStartPos, fEndPos, IGNORE_MONSTERS, IGNOREED, 0);
+    get_tr2(0, TR_vecEndPos, vHitPos);
 }
 
 CreateCvars()
