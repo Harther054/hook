@@ -5,6 +5,10 @@
 #define PLUGIN_VERSION          "1.0.0"
 #define PLUGIN_AUTHOR           "by fgd"
 
+enum eCvars
+{
+    CVAR_HOOK_ACCESS[6]
+};
 
 public plugin_init()
 {
