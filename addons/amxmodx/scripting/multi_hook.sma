@@ -19,7 +19,7 @@ enum eCvars
 
 new g_DataStatus[MAX_PLAYERS + 1][eHookStatus], g_Cvars[eCvars];
 
-new Float: g_fHookOriginP[MAX_PLAYERS + 1][3];
+new g_fHookEndPos[MAX_PLAYERS + 1][3];
 
 new g_iBitHookAccess;
 
@@ -37,6 +37,17 @@ public plugin_init()
     g_iBitHookAccess = read_flags(g_Cvars[CVAR_HOOK_ACCESS]);
 }
 
+public client_putinserver(id)
+{
+    if(IsAccess(id, g_iBitHookAccess))
+        g_DataStatus[id][bHOOK_USE] = true;
+}
+
+public client_disconnected(id)
+{
+    g_DataStatus[id][bHOOK_USE] = false;
+}
+
 public Clcmd_HookOn(id)
 {
     if(!IsAccess(id, g_iBitHookAccess))
@@ -49,7 +60,7 @@ public Clcmd_HookOn(id)
         g_DataStatus[id][bHOOK_GIVE] = true;
 
         if(g_DataStatus[id][bHOOK_FIX])
-            velocity_by_aim(id, 9999, g_fHookOriginP[id]);
+            get_user_origin(id, g_fHookEndPos[id], 3);
     }
 
     return PLUGIN_HANDLED;
@@ -69,13 +80,36 @@ public MultiHook_PostThink(id)
 {
     if(g_DataStatus[id][bHOOK_GIVE])
     {
-        static Float: fStartPos[3], Float:fEndPos[3];
+        static Float: fStartPos[3];
         
         get_entvar(id, var_origin, fStartPos);
 
         if(!g_DataStatus[id][bHOOK_FIX])
-            velocity_by_aim(id, 9999, g_fHookOriginP[id]);
+            get_user_origin(id, g_fHookEndPos[id], 3);
 
+        new Float: fEndPos[3];
+        IVecFVec(g_fHookEndPos[id], fEndPos);
+
+        static Float: fDistance;
+        fDistance = get_distance_f(fEndPos, fStartPos);
+
+        static Float: fSpeed;
+        fSpeed = float(500) / fDistance;
+
+        static Float: fVelocity[3];
+
+        if(fDistance > 25.0)
+        {
+            fVelocity[0] = (fEndPos[0] - fStartPos[0]) * fSpeed;
+            fVelocity[1] = (fEndPos[1] - fStartPos[1]) * fSpeed;
+            fVelocity[2] = (fEndPos[2] - fStartPos[2]) * fSpeed;
+
+            set_entvar(id, var_velocity, fVelocity);
+        }
+        else 
+        {
+            Clcmd_HookOff(id);
+        }
     }
 }
 
@@ -87,6 +121,7 @@ CreateCvars()
             .string = "r",
             .description = "Флаг доступа к паутинке"
         ), g_Cvars[CVAR_HOOK_ACCESS], charsmax(g_Cvars[CVAR_HOOK_ACCESS]));
+
 
     AutoExecConfig(true, "multi_hook", "multi_hook");
 }
