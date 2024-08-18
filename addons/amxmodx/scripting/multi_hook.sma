@@ -7,7 +7,9 @@
 
 enum _: eHookStatus
 {
-    bool:HOOK_USE
+    bool:bHOOK_USE,
+    bool:bHOOK_GIVE,
+    bool:bHOOK_FIX
 }
 
 enum eCvars
@@ -16,6 +18,8 @@ enum eCvars
 };
 
 new g_DataStatus[MAX_PLAYERS + 1][eHookStatus], g_Cvars[eCvars];
+
+new Float: g_fHookOriginP[MAX_PLAYERS + 1][3];
 
 new g_iBitHookAccess;
 
@@ -40,36 +44,39 @@ public Clcmd_HookOn(id)
         client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
         return PLUGIN_HANDLED;
     }
-    g_DataStatus[id][HOOK_USE] = true;
+    if(g_DataStatus[id][bHOOK_USE])
+    {
+        g_DataStatus[id][bHOOK_GIVE] = true;
+
+        if(g_DataStatus[id][bHOOK_FIX])
+            velocity_by_aim(id, 9999, g_fHookOriginP[id]);
+    }
 
     return PLUGIN_HANDLED;
 }
 
 public Clcmd_HookOff(id)
 {
+    if(g_DataStatus[id][bHOOK_USE])
+    {
+        g_DataStatus[id][bHOOK_GIVE] = false;
+    }
 
+    return PLUGIN_HANDLED;
 }
 
 public MultiHook_PostThink(id)
 {
-    if(g_DataStatus[id][HOOK_USE])
+    if(g_DataStatus[id][bHOOK_GIVE])
     {
         static Float: fStartPos[3], Float:fEndPos[3];
         
         get_entvar(id, var_origin, fStartPos);
 
-        velocity_by_aim(id, 9999, fEndPos);
+        if(!g_DataStatus[id][bHOOK_FIX])
+            velocity_by_aim(id, 9999, g_fHookOriginP[id]);
 
-        get_traceline(fStartPos, fEndPos, id, fEndPos);
-
-        IsHooking(id);
-    }    
-}
-
-stock get_traceline(Float: fStartPos[3], Float: fEndPos[3], const IGNOREED, Float: vHitPos[3])
-{
-    engfunc(EngFunc_TraceLine, fStartPos, fEndPos, IGNORE_MONSTERS, IGNOREED, 0);
-    get_tr2(0, TR_vecEndPos, vHitPos);
+    }
 }
 
 CreateCvars()
@@ -80,4 +87,6 @@ CreateCvars()
             .string = "r",
             .description = "Флаг доступа к паутинке"
         ), g_Cvars[CVAR_HOOK_ACCESS], charsmax(g_Cvars[CVAR_HOOK_ACCESS]));
+
+    AutoExecConfig(true, "multi_hook", "multi_hook");
 }
