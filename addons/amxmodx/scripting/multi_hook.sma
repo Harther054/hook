@@ -5,14 +5,19 @@
 #define PLUGIN_VERSION          "1.0.0"
 #define PLUGIN_AUTHOR           "by fgd"
 
+enum _: eHookStatus
+{
+    bool:HOOK_USE
+}
+
 enum eCvars
 {
     CVAR_HOOK_ACCESS[6]
 };
 
-new g_Cvars[eCvars];
+new g_DataStatus[MAX_PLAYERS + 1][eHookStatus], g_Cvars[eCvars];
 
-new iBitHookAccess;
+new g_iBitHookAccess;
 
 public plugin_init()
 {
@@ -23,12 +28,19 @@ public plugin_init()
 
     CreateCvars();
 
-    iBitHookAccess = read_flags(g_Cvars[CVAR_HOOK_ACCESS]);
+    g_iBitHookAccess = read_flags(g_Cvars[CVAR_HOOK_ACCESS]);
 }
 
 public Clcmd_HookOn(id)
 {
-
+    if(!IsAccess(id, g_iBitHookAccess))
+    {
+        client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
+        return PLUGIN_HANDLED;
+    }
+    g_DataStatus[id][HOOK_USE] = true;
+    
+    return PLUGIN_HANDLED;
 }
 
 public Clcmd_HookOff(id)
