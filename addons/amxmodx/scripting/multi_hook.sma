@@ -30,6 +30,10 @@ public plugin_init()
     register_clcmd("+hook", "Clcmd_HookOn");
     register_clcmd("-hook", "Clcmd_HookOff");
 
+    CreateMultiForward("hook_on_start", ET_STOP, FP_CELL);
+    CreateMultiForward("hook_on_update", ET_STOP, FP_CELL);
+    CreateMultiForward("hook_on_end", ET_STOP, FP_CELL);
+
     register_forward(FM_PlayerPostThink, "MultiHook_PostThink", true);
 
     CreateCvars();
@@ -56,6 +60,8 @@ public Clcmd_HookOn(id)
 
         if(g_DataStatus[id][bHOOK_FIX])
             get_user_origin(id, g_fHookEndPos[id], 3);
+
+        ExecuteForward("hook_on_start", _, id);
     }
     else 
         client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
@@ -68,6 +74,8 @@ public Clcmd_HookOff(id)
     if(g_DataStatus[id][bHOOK_USE])
     {
         g_DataStatus[id][bHOOK_GIVE] = false;
+
+        ExecuteForward("hook_on_end", _, id);
     }
 
     return PLUGIN_HANDLED;
@@ -102,6 +110,8 @@ public MultiHook_PostThink(id)
             fVelocity[2] = (fEndPos[2] - fStartPos[2]) * fSpeed;
 
             set_entvar(id, var_velocity, fVelocity);
+
+            ExecuteForward("hook_on_update", _, id);
         }
         else 
         {
