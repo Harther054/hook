@@ -50,11 +50,6 @@ public client_disconnected(id)
 
 public Clcmd_HookOn(id)
 {
-    if(!IsAccess(id, g_iBitHookAccess))
-    {
-        client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
-        return PLUGIN_HANDLED;
-    }
     if(g_DataStatus[id][bHOOK_USE])
     {
         g_DataStatus[id][bHOOK_GIVE] = true;
@@ -62,6 +57,8 @@ public Clcmd_HookOn(id)
         if(g_DataStatus[id][bHOOK_FIX])
             get_user_origin(id, g_fHookEndPos[id], 3);
     }
+    else 
+        client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
 
     return PLUGIN_HANDLED;
 }
