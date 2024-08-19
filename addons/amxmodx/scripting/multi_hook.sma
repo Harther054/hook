@@ -17,9 +17,16 @@ enum eCvars
     CVAR_HOOK_ACCESS[6]
 };
 
-new g_DataStatus[MAX_PLAYERS + 1][eHookStatus], g_Cvars[eCvars];
+enum eForwards
+{
+    FWD_ON_START,
+    FWD_ON_UPDATE,
+    FWD_ON_END
+};
 
-new g_fHookEndPos[MAX_PLAYERS + 1][3];
+new g_DataStatus[MAX_PLAYERS + 1][eHookStatus], g_Cvars[eCvars], g_Fwd[eForwards];
+
+new Float: g_fHookEndPos[MAX_PLAYERS + 1][3];
 
 new g_iBitHookAccess;
 
@@ -30,9 +37,9 @@ public plugin_init()
     register_clcmd("+hook", "Clcmd_HookOn");
     register_clcmd("-hook", "Clcmd_HookOff");
 
-    CreateMultiForward("hook_on_start", ET_STOP, FP_CELL);
-    CreateMultiForward("hook_on_update", ET_STOP, FP_CELL);
-    CreateMultiForward("hook_on_end", ET_STOP, FP_CELL);
+    g_Fwd[FWD_ON_START] = CreateMultiForward("hook_on_start", ET_STOP, FP_CELL);
+    g_Fwd[FWD_ON_UPDATE] = CreateMultiForward("hook_on_update", ET_STOP, FP_CELL, FP_FLOAT);
+    g_Fwd[FWD_ON_END] = CreateMultiForward("hook_on_end", ET_STOP, FP_CELL);
 
     register_forward(FM_PlayerPostThink, "MultiHook_PostThink", true);
 
@@ -58,10 +65,11 @@ public Clcmd_HookOn(id)
     {
         g_DataStatus[id][bHOOK_GIVE] = true;
 
-        if(g_DataStatus[id][bHOOK_FIX])
-            get_user_origin(id, g_fHookEndPos[id], 3);
+        new fEndPos[3];
+        get_user_origin(id, fEndPos, 3);
+        IVecFVec(fEndPos, g_fHookEndPos[id]);
 
-        ExecuteForward("hook_on_start", _, id);
+        ExecuteForward(g_Fwd[FWD_ON_START], _, id);
     }
     else 
         client_print_color(id, print_team_red, "^3[^4Multi Hook^3]^1 У вас ^3нет ^1прав ^4доступа");
@@ -75,7 +83,7 @@ public Clcmd_HookOff(id)
     {
         g_DataStatus[id][bHOOK_GIVE] = false;
 
-        ExecuteForward("hook_on_end", _, id);
+        ExecuteForward(g_Fwd[FWD_ON_END], _, id);
     }
 
     return PLUGIN_HANDLED;
@@ -89,14 +97,10 @@ public MultiHook_PostThink(id)
         
         get_entvar(id, var_origin, fStartPos);
 
-        if(!g_DataStatus[id][bHOOK_FIX])
-            get_user_origin(id, g_fHookEndPos[id], 3);
-
-        new Float: fEndPos[3];
-        IVecFVec(g_fHookEndPos[id], fEndPos);
+        ExecuteForward(g_Fwd[FWD_ON_UPDATE], _, id, g_fHookEndPos[id]);
 
         static Float: fDistance;
-        fDistance = get_distance_f(fEndPos, fStartPos);
+        fDistance = get_distance_f(g_fHookEndPos[id], fStartPos);
 
         static Float: fSpeed;
         fSpeed = float(500) / fDistance;
@@ -105,13 +109,12 @@ public MultiHook_PostThink(id)
 
         if(fDistance > 25.0)
         {
-            fVelocity[0] = (fEndPos[0] - fStartPos[0]) * fSpeed;
-            fVelocity[1] = (fEndPos[1] - fStartPos[1]) * fSpeed;
-            fVelocity[2] = (fEndPos[2] - fStartPos[2]) * fSpeed;
+            fVelocity[0] = (g_fHookEndPos[id][0] - fStartPos[0]) * fSpeed;
+            fVelocity[1] = (g_fHookEndPos[id][1] - fStartPos[1]) * fSpeed;
+            fVelocity[2] = (g_fHookEndPos[id][2] - fStartPos[2]) * fSpeed;
 
             set_entvar(id, var_velocity, fVelocity);
 
-            ExecuteForward("hook_on_update", _, id);
         }
         else 
         {
